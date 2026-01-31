@@ -1,3 +1,13 @@
+
+
+
+
+
+
+
+
+project structure:
+
 263-final-project/
 ├── data/                        # Data storage
 │   ├── raw/                     # Original WildChat sampling data
@@ -14,5 +24,5 @@
 │   ├── train_bert.ipynb         # Notebook for fine-tuning the model
 │   └── evaluate.ipynb           # Running experiments, plotting, and calculating metrics
 ├── models/                      # Storage for fine-tuned model weights (checkpoints)
-├── requirements.txt           
+├── requirements.txt
 └── main.py
