@@ -25,4 +25,5 @@ project structure:
 │   └── evaluate.ipynb           # Running experiments, plotting, and calculating metrics
 ├── models/                      # Storage for fine-tuned model weights (checkpoints)
 ├── requirements.txt
-└── main.py```
+└── main.py
+```
