@@ -1,0 +1,7 @@
+en_core_web_sm
+spacy
+datasets
+seqeval
+presidio-analyzer
+presidio-evaluator
+kaleido
