@@ -2,9 +2,10 @@
 """
 GPT-4o span evaluation pipeline (v3).
 
-This script samples synthetic records, asks GPT-4o to both redact the text and
-return PII span snippets, reconstructs character offsets locally, and computes
-metrics under several matching regimes.
+This script optionally fuzzes the synthetic dataset with several obfuscation modes,
+asks GPT-4o to both redact the text and return PII span snippets, reconstructs
+character offsets locally, and computes metrics under several matching regimes (both
+overall and per obfuscation type).
 """
 
 import argparse
@@ -13,12 +14,217 @@ import os
 import random
 import time
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 from openai import OpenAI
 from tqdm.auto import tqdm
+
+# ---------------------------------------------------------------------------
+# Obfuscation helpers (dataset fuzzing)
+# ---------------------------------------------------------------------------
+
+OBFUSCATION_TYPES = ["None", "1-space", "5-space", "textualization"]
+
+DIGIT_MAP = {
+    "0": "zero",
+    "1": "one",
+    "2": "two",
+    "3": "three",
+    "4": "four",
+    "5": "five",
+    "6": "six",
+    "7": "seven",
+    "8": "eight",
+    "9": "nine",
+}
+
+SYMBOL_MAP = {
+    "@": ["at"],
+    ".": ["dot"],
+    "-": ["dash"],
+    "_": ["underscore"],
+    "+": ["plus"],
+    "#": ["hash"],
+    "$": ["dollar"],
+    "/": ["slash"],
+}
+
+
+def ensure_metadata_dict(metadata: Any) -> Dict[str, Any]:
+    if metadata is None:
+        return {}
+    if isinstance(metadata, dict):
+        return dict(metadata)
+    return {"original_metadata": metadata}
+
+
+def transform_text(text: str, mode: str) -> Tuple[str, List[int]]:
+    if mode not in OBFUSCATION_TYPES:
+        raise ValueError(f"Unsupported obfuscation mode: {mode}")
+
+    if mode == "None":
+        return text, list(range(len(text) + 1))
+
+    result: List[str] = []
+    index_map: List[int] = [0]
+    curr = 0
+    text_length = len(text)
+
+    for i, ch in enumerate(text):
+        segment = ch
+        if mode == "1-space":
+            segment = ch
+            result.append(segment)
+            curr += len(segment)
+            index_map.append(curr)
+            if i != text_length - 1:
+                result.append(" ")
+                curr += 1
+            continue
+
+        if mode == "5-space":
+            segment = ch
+            result.append(segment)
+            curr += len(segment)
+            index_map.append(curr)
+            if i != text_length - 1 and (i + 1) % 5 == 0:
+                result.append(" ")
+                curr += 1
+            continue
+
+        if mode == "textualization":
+            next_char = text[i + 1] if i + 1 < text_length else ""
+            if ch.isdigit():
+                term = DIGIT_MAP[ch]
+                prefix = "" if not result or result[-1].endswith(" ") else " "
+                suffix = "" if (not next_char or next_char.isspace()) else " "
+                segment = f"{prefix}{term}{suffix}"
+            elif ch in SYMBOL_MAP:
+                term = " ".join(SYMBOL_MAP[ch])
+                prefix = "" if not result or result[-1].endswith(" ") else " "
+                suffix = "" if (not next_char or next_char.isspace()) else " "
+                segment = f"{prefix}{term}{suffix}"
+            else:
+                segment = ch
+            result.append(segment)
+            curr += len(segment)
+            index_map.append(curr)
+            continue
+
+        raise RuntimeError("Unhandled obfuscation mode control flow.")
+
+    transformed = "".join(result)
+    return transformed, index_map
+
+
+def remap_spans(spans: List[Dict[str, Any]], index_map: List[int], new_text: str) -> List[Dict[str, Any]]:
+    remapped: List[Dict[str, Any]] = []
+    map_length = len(index_map)
+    for span in spans:
+        start = int(span["start_position"])
+        end = int(span["end_position"])
+        if start >= map_length or end >= map_length:
+            # Out-of-range indices are skipped to avoid crashes; dataset should be consistent.
+            continue
+        new_start = index_map[start]
+        new_end = index_map[end]
+        remapped.append(
+            {
+                **span,
+                "start_position": new_start,
+                "end_position": new_end,
+                "entity_value": new_text[new_start:new_end],
+            }
+        )
+    return remapped
+
+
+def augment_with_obfuscation(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Expand the dataset to include all obfuscation variants."""
+    if all(
+        isinstance(record.get("metadata"), dict)
+        and "obfuscation_type" in record["metadata"]
+        for record in records
+    ):
+        return records
+
+    augmented: List[Dict[str, Any]] = []
+    for idx, record in enumerate(records):
+        base_metadata = ensure_metadata_dict(record.get("metadata"))
+        for mode in OBFUSCATION_TYPES:
+            new_record = deepcopy(record)
+            new_text, mapping = transform_text(record["full_text"], mode)
+            new_record["full_text"] = new_text
+            new_record["spans"] = remap_spans(record.get("spans", []), mapping, new_text)
+
+            metadata = ensure_metadata_dict(new_record.get("metadata"))
+            metadata.update(base_metadata)
+            metadata["obfuscation_type"] = mode
+            metadata.setdefault("original_sample_index", idx)
+            new_record["metadata"] = metadata
+
+            augmented.append(new_record)
+
+    return augmented
+
+
+def sample_records(
+    records: List[Dict[str, Any]],
+    total_sample_size: int,
+    seed: int,
+) -> Tuple[List[int], List[Dict[str, Any]]]:
+    """Sample records, distributing evenly across obfuscation types when present."""
+    rng = random.Random(seed)
+    enumerated = list(enumerate(records))
+
+    type_to_records: Dict[str, List[Tuple[int, Dict[str, Any]]]] = defaultdict(list)
+    for idx, record in enumerated:
+        metadata = ensure_metadata_dict(record.get("metadata"))
+        obfuscation = metadata.get("obfuscation_type")
+        if obfuscation:
+            type_to_records[obfuscation].append((idx, record))
+
+    if not type_to_records:
+        # No obfuscation metadata; fall back to plain sampling.
+        count = min(total_sample_size, len(enumerated))
+        selected = rng.sample(enumerated, count)
+        selected.sort(key=lambda item: item[0])
+        indices = [idx for idx, _ in selected]
+        samples = [record for _, record in selected]
+        return indices, samples
+
+    available_types = [obf for obf in OBFUSCATION_TYPES if obf in type_to_records]
+    num_types = len(available_types)
+    if num_types == 0:
+        count = min(total_sample_size, len(enumerated))
+        selected = rng.sample(enumerated, count)
+        selected.sort(key=lambda item: item[0])
+        indices = [idx for idx, _ in selected]
+        samples = [record for _, record in selected]
+        return indices, samples
+
+    per_type_base = total_sample_size // num_types
+    remainder = total_sample_size % num_types
+    selected_pairs: List[Tuple[int, Dict[str, Any]]] = []
+
+    for idx, obfuscation in enumerate(available_types):
+        group = type_to_records.get(obfuscation, [])
+        if not group:
+            continue
+        requested = per_type_base + (1 if idx < remainder else 0)
+        if requested == 0:
+            requested = 1  # ensure each available type is represented at least once
+        count = min(requested, len(group))
+        selected = rng.sample(group, count) if len(group) > count else group
+        selected_pairs.extend(selected)
+    selected_pairs.sort(key=lambda item: item[0])
+    indices = [idx for idx, _ in selected_pairs]
+    samples = [record for _, record in selected_pairs]
+    return indices, samples
+
 
 # ---------------------------------------------------------------------------
 # Prompt construction helpers
@@ -400,6 +606,81 @@ def compute_all_metrics(
     return metrics
 
 
+def build_metrics_summary(metrics_by_mode: Dict[str, Dict[str, Any]]) -> pd.DataFrame:
+    if not metrics_by_mode:
+        return pd.DataFrame(
+            columns=[
+                "evaluation_mode",
+                "description",
+                "tp",
+                "fp",
+                "fn",
+                "precision",
+                "recall",
+                "f1",
+                "accuracy",
+            ]
+        )
+
+    return (
+        pd.DataFrame({mode: data["aggregate"] for mode, data in metrics_by_mode.items()})
+        .T.rename_axis("evaluation_mode")
+        .reset_index()
+        .loc[
+            :,
+            [
+                "evaluation_mode",
+                "description",
+                "tp",
+                "fp",
+                "fn",
+                "precision",
+                "recall",
+                "f1",
+                "accuracy",
+            ],
+        ]
+    )
+
+
+def compute_metrics_by_obfuscation(
+    records: List[Dict[str, Any]],
+    entity_types: List[str],
+    entity_type_set: set,
+) -> pd.DataFrame:
+    summaries: List[pd.DataFrame] = []
+    for obfuscation in OBFUSCATION_TYPES:
+        subset = [
+            record
+            for record in records
+            if ensure_metadata_dict(record.get("metadata")).get("obfuscation_type") == obfuscation
+        ]
+        if not subset:
+            continue
+        metrics = compute_all_metrics(subset, entity_types, entity_type_set)
+        summary = build_metrics_summary(metrics)
+        summary.insert(0, "obfuscation_type", obfuscation)
+        summaries.append(summary)
+
+    if not summaries:
+        return pd.DataFrame(
+            columns=[
+                "obfuscation_type",
+                "evaluation_mode",
+                "description",
+                "tp",
+                "fp",
+                "fn",
+                "precision",
+                "recall",
+                "f1",
+                "accuracy",
+            ]
+        )
+
+    return pd.concat(summaries, ignore_index=True)
+
+
 # ---------------------------------------------------------------------------
 # Main execution
 # ---------------------------------------------------------------------------
@@ -413,7 +694,15 @@ def parse_args() -> argparse.Namespace:
         default=Path(__file__).resolve().parents[1] / "data" / "synth_dataset_v2.json",
         help="Path to the synthetic dataset JSON file.",
     )
-    parser.add_argument("--sample-size", type=int, default=200, help="Number of records to evaluate.")
+    parser.add_argument(
+        "--sample-size",
+        type=int,
+        default=1500,
+        help=(
+            "Number of records to sample. When fuzzing, this total is distributed across "
+            "available obfuscation types."
+        ),
+    )
     parser.add_argument("--seed", type=int, default=263, help="Random seed for sampling.")
     parser.add_argument("--model", type=str, default="gpt-5.1", help="OpenAI model name to query.")
     parser.add_argument(
@@ -431,9 +720,28 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--per-entity-output",
         type=Path,
-        default=Path("gpt4o_span_metrics_per_entity_v3.csv"),
+        default=Path("gpt_span_metrics_per_entity_v3.csv"),
         help="Optional CSV output with per-entity metrics (blank to skip).",
     )
+    parser.add_argument(
+        "--obfuscation-output",
+        type=Path,
+        default=Path("gpt_span_metrics_by_obfuscation_v3.csv"),
+        help="Optional CSV output with metrics aggregated by obfuscation type (blank to skip).",
+    )
+    parser.add_argument(
+        "--fuzz-dataset",
+        dest="fuzz_dataset",
+        action="store_true",
+        help="Generate obfuscation variants (None/1-space/5-space/textualization) before sampling.",
+    )
+    parser.add_argument(
+        "--no-fuzz-dataset",
+        dest="fuzz_dataset",
+        action="store_false",
+        help="Use the dataset as-is without generating obfuscation variants.",
+    )
+    parser.set_defaults(fuzz_dataset=True)
     return parser.parse_args()
 
 
@@ -447,14 +755,29 @@ def main() -> None:
         full_dataset: List[Dict[str, Any]] = json.load(f)
     print(f"Loaded {len(full_dataset)} records from {args.dataset}")
 
-    entity_types = sorted({span["entity_type"] for sample in full_dataset for span in sample["spans"]})
+    working_dataset = augment_with_obfuscation(full_dataset) if args.fuzz_dataset else full_dataset
+    if args.fuzz_dataset:
+        print(
+            f"Augmented dataset to {len(working_dataset)} records "
+            f"across obfuscation types: {', '.join(OBFUSCATION_TYPES)}"
+        )
+
+    entity_types = sorted({span["entity_type"] for sample in working_dataset for span in sample["spans"]})
     entity_type_set = set(entity_types)
     print(f"Entity types ({len(entity_types)}): {entity_types}")
 
-    rng = random.Random(args.seed)
-    sample_indices = sorted(rng.sample(range(len(full_dataset)), args.sample_size))
-    sampled_dataset = [full_dataset[i] for i in sample_indices]
-    print(f"Sampled {len(sampled_dataset)} records with seed {args.seed}.")
+    sample_indices, sampled_dataset = sample_records(working_dataset, args.sample_size, args.seed)
+    print(
+        f"Sampled {len(sampled_dataset)} records (seed={args.seed}). "
+        f"{'Fuzzed dataset in use.' if args.fuzz_dataset else 'Using original dataset.'}"
+    )
+    type_counts = defaultdict(int)
+    for record in sampled_dataset:
+        obfuscation = ensure_metadata_dict(record.get("metadata")).get("obfuscation_type", "None")
+        type_counts[obfuscation] += 1
+    if type_counts:
+        formatted_counts = ", ".join(f"{k}: {v}" for k, v in type_counts.items())
+        print(f"Sample counts by obfuscation type -> {formatted_counts}")
 
     client = OpenAI()
     system_prompt, rules_block = build_prompts(entity_types)
@@ -507,25 +830,7 @@ def main() -> None:
     print(f"Wrote {len(prediction_records)} prediction records to {args.output}")
 
     metrics_by_mode = compute_all_metrics(prediction_records, entity_types, entity_type_set)
-    metrics_summary = (
-        pd.DataFrame({mode: data["aggregate"] for mode, data in metrics_by_mode.items()})
-        .T.rename_axis("evaluation_mode")
-        .reset_index()
-        .loc[
-            :,
-            [
-                "evaluation_mode",
-                "description",
-                "tp",
-                "fp",
-                "fn",
-                "precision",
-                "recall",
-                "f1",
-                "accuracy",
-            ],
-        ]
-    )
+    metrics_summary = build_metrics_summary(metrics_by_mode)
 
     print("\n=== Aggregate Metrics ===")
     print(metrics_summary.to_string(index=False))
@@ -547,6 +852,14 @@ def main() -> None:
             per_entity_frames.append(df)
         pd.concat(per_entity_frames, ignore_index=True).to_csv(args.per_entity_output, index=False)
         print(f"Per-entity metrics written to {args.per_entity_output}")
+
+    obfuscation_summary = compute_metrics_by_obfuscation(prediction_records, entity_types, entity_type_set)
+    if not obfuscation_summary.empty:
+        print("\n=== Metrics by Obfuscation Type ===")
+        print(obfuscation_summary.to_string(index=False))
+        if args.obfuscation_output:
+            obfuscation_summary.to_csv(args.obfuscation_output, index=False)
+            print(f"Obfuscation-level metrics written to {args.obfuscation_output}")
 
 
 if __name__ == "__main__":
