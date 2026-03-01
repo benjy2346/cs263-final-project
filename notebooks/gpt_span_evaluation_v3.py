@@ -276,7 +276,14 @@ def extract_json_object(content: str) -> Dict[str, Any]:
         end = payload.rfind("}")
         if start != -1 and end != -1:
             payload = payload[start : end + 1]
-    return json.loads(payload)
+    try:
+        return json.loads(payload)
+    except json.JSONDecodeError as exc:
+        # Retry with relaxed parsing to tolerate unescaped control characters.
+        try:
+            return json.loads(payload, strict=False)
+        except json.JSONDecodeError:
+            raise exc
 
 
 def candidate_snippets(candidate: Dict[str, Any]) -> List[str]:
@@ -691,7 +698,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset",
         type=Path,
-        default=Path(__file__).resolve().parents[1] / "data" / "synth_dataset_v2.json",
+        default=Path(__file__).resolve().parents[1] / "data" / "synth_dataset_v2.original.json",
         help="Path to the synthetic dataset JSON file.",
     )
     parser.add_argument(
