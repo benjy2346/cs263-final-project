@@ -1,0 +1,809 @@
+{
+  "detector": "DataFog",
+  "n_samples": 1500,
+  "iou_threshold": 0.5,
+  "require_same_label": true,
+  "micro": {
+    "tp": 205,
+    "fp": 277,
+    "fn": 2658,
+    "precision": 0.42531120331950206,
+    "recall": 0.07160321341250436,
+    "f1": 0.12257100149476831
+  },
+  "per_label": {
+    "AGE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 74,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "CREDIT_CARD": {
+      "tp": 52,
+      "fp": 0,
+      "fn": 84,
+      "precision": 1.0,
+      "recall": 0.38235294117647056,
+      "f1": 0.5531914893617021
+    },
+    "DATE_TIME": {
+      "tp": 48,
+      "fp": 0,
+      "fn": 71,
+      "precision": 1.0,
+      "recall": 0.40336134453781514,
+      "f1": 0.5748502994011977
+    },
+    "DOMAIN_NAME": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 37,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "EMAIL_ADDRESS": {
+      "tp": 49,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "GPE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 411,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "IBAN_CODE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 21,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "IP_ADDRESS": {
+      "tp": 13,
+      "fp": 2,
+      "fn": 1,
+      "precision": 0.8666666666666667,
+      "recall": 0.9285714285714286,
+      "f1": 0.896551724137931
+    },
+    "NRP": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 55,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "ORGANIZATION": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 250,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "PERSON": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 857,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "PHONE_NUMBER": {
+      "tp": 18,
+      "fp": 0,
+      "fn": 74,
+      "precision": 1.0,
+      "recall": 0.1956521739130435,
+      "f1": 0.32727272727272727
+    },
+    "STREET_ADDRESS": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 598,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "TITLE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 92,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "US_DRIVER_LICENSE": {
+      "tp": 0,
+      "fp": 0,
+      "fn": 5,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    "US_SSN": {
+      "tp": 16,
+      "fp": 0,
+      "fn": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "ZIP_CODE": {
+      "tp": 9,
+      "fp": 275,
+      "fn": 28,
+      "precision": 0.03169014084507042,
+      "recall": 0.24324324324324326,
+      "f1": 0.056074766355140186
+    }
+  },
+  "error_examples": [
+    {
+      "template_id": "87",
+      "text": "The address of Persint is 6750 Koskikatu 25 Apt. 864\nArtilleros\n, CO\n Uruguay 64677",
+      "gold": [
+        {
+          "start": 26,
+          "end": 83,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 15,
+          "end": 22,
+          "label": "ORGANIZATION"
+        }
+      ],
+      "pred": [
+        {
+          "start": 78,
+          "end": 83,
+          "label": "ZIP_CODE"
+        }
+      ],
+      "tp": 0,
+      "fp": 1,
+      "fn": 2
+    },
+    {
+      "template_id": "106",
+      "text": "Krisztián Szöllösy listed his top 20 songs for Entertainment Weekly and had the balls to list this song at #15. (What did he put at #1 you ask? Answer:\"Tube Snake Boogie\" by Szabina J Gelencsér ג€“ go figure)",
+      "gold": [
+        {
+          "start": 174,
+          "end": 193,
+          "label": "PERSON"
+        },
+        {
+          "start": 0,
+          "end": 18,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+    },
+    {
+      "template_id": "118",
+      "text": "The Exversion Orchestra was founded in 1977. Since then, it has grown from a volunteer community orchestra to a fully professional orchestra serving Southern Tunisia",
+      "gold": [
+        {
+          "start": 158,
+          "end": 165,
+          "label": "GPE"
+        },
+        {
+          "start": 39,
+          "end": 43,
+          "label": "DATE_TIME"
+        },
+        {
+          "start": 4,
+          "end": 13,
+          "label": "ORGANIZATION"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 3
+    },
+    {
+      "template_id": "58",
+      "text": "My name is Rubija",
+      "gold": [
+        {
+          "start": 11,
+          "end": 17,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "104",
+      "text": "When they weren't singing about Hobbits, satanic felines and interstellar journeys, they were singing about the verses from Faina D. Yefremova's Cautionary Tales. Is there a better example of unbridled creativity than early Yefremova?",
+      "gold": [
+        {
+          "start": 224,
+          "end": 233,
+          "label": "PERSON"
+        },
+        {
+          "start": 124,
+          "end": 142,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+    },
+    {
+      "template_id": "199",
+      "text": "Action & Adventure, Animation, Comedy, Kids & Family, Mystery & Suspense\nDirected By:    Johannes Varvio",
+      "gold": [
+        {
+          "start": 89,
+          "end": 104,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "43",
+      "text": "Bot: What's the name on the account? User: Šárka Ottová",
+      "gold": [
+        {
+          "start": 43,
+          "end": 55,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "99",
+      "text": "Unlike the Christiansen novel, it's not about necrophilia. What it is about, I suppose is anyone's guess. A brilliant piece of baroque pop.",
+      "gold": [
+        {
+          "start": 11,
+          "end": 23,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "22",
+      "text": "I will be travelling to Canada next week, so I need my passport to be ready by then",
+      "gold": [
+        {
+          "start": 24,
+          "end": 30,
+          "label": "GPE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "128",
+      "text": "my driver's license number is 2270-66-1551",
+      "gold": [
+        {
+          "start": 30,
+          "end": 42,
+          "label": "US_DRIVER_LICENSE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "206",
+      "text": "This 79 year old female complaining of stomach pain.",
+      "gold": [
+        {
+          "start": 5,
+          "end": 7,
+          "label": "AGE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "151",
+      "text": "Billing address: Sara Schwarz\n    28245 Puruntie 82 Apt. 595\n   LAPPEENRANTA\n    SK\n    53650",
+      "gold": [
+        {
+          "start": 88,
+          "end": 93,
+          "label": "ZIP_CODE"
+        },
+        {
+          "start": 81,
+          "end": 83,
+          "label": "GPE"
+        },
+        {
+          "start": 64,
+          "end": 76,
+          "label": "GPE"
+        },
+        {
+          "start": 52,
+          "end": 60,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 40,
+          "end": 51,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 34,
+          "end": 39,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 17,
+          "end": 29,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [
+        {
+          "start": 34,
+          "end": 39,
+          "label": "ZIP_CODE"
+        },
+        {
+          "start": 88,
+          "end": 93,
+          "label": "ZIP_CODE"
+        }
+      ],
+      "tp": 1,
+      "fp": 1,
+      "fn": 6
+    },
+    {
+      "template_id": "200",
+      "text": "Ubul: What a wife.\nNicole: Remember me, Mary? When I killed your brother, I talked just like this!\nJohn: You saved my life! How can I ever repay you?",
+      "gold": [
+        {
+          "start": 99,
+          "end": 103,
+          "label": "PERSON"
+        },
+        {
+          "start": 40,
+          "end": 44,
+          "label": "PERSON"
+        },
+        {
+          "start": 19,
+          "end": 25,
+          "label": "PERSON"
+        },
+        {
+          "start": 0,
+          "end": 4,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 4
+    },
+    {
+      "template_id": "29",
+      "text": "My name appears incorrectly on credit card statement could you please correct it to Dr. Cettina Fanucci?",
+      "gold": [
+        {
+          "start": 88,
+          "end": 103,
+          "label": "PERSON"
+        },
+        {
+          "start": 84,
+          "end": 87,
+          "label": "TITLE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+    },
+    {
+      "template_id": "29",
+      "text": "My name appears incorrectly on credit card statement could you please correct it to Dr. Berta Szöllössy?",
+      "gold": [
+        {
+          "start": 88,
+          "end": 103,
+          "label": "PERSON"
+        },
+        {
+          "start": 84,
+          "end": 87,
+          "label": "TITLE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+    },
+    {
+      "template_id": "99",
+      "text": "Unlike the Jensen novel, it's not about necrophilia. What it is about, I suppose is anyone's guess. A brilliant piece of baroque pop.",
+      "gold": [
+        {
+          "start": 11,
+          "end": 17,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "69",
+      "text": "What's your last name? Magnusson",
+      "gold": [
+        {
+          "start": 23,
+          "end": 32,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "58",
+      "text": "My name is Siiri",
+      "gold": [
+        {
+          "start": 11,
+          "end": 16,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "130",
+      "text": "William Hughes\n\n20789 Allika 46\n Suite 501\n Riisa\n\n Estonia 62488",
+      "gold": [
+        {
+          "start": 60,
+          "end": 65,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 52,
+          "end": 59,
+          "label": "GPE"
+        },
+        {
+          "start": 44,
+          "end": 49,
+          "label": "GPE"
+        },
+        {
+          "start": 33,
+          "end": 42,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 22,
+          "end": 31,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 16,
+          "end": 21,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 0,
+          "end": 14,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [
+        {
+          "start": 16,
+          "end": 21,
+          "label": "ZIP_CODE"
+        },
+        {
+          "start": 60,
+          "end": 65,
+          "label": "ZIP_CODE"
+        }
+      ],
+      "tp": 0,
+      "fp": 2,
+      "fn": 7
+    },
+    {
+      "template_id": "120",
+      "text": "Microbilt Corporation is the brainchild of our 3 founders: Kónya, Becker and Vasquez.  The idea was born (on the beach) while they were constructing a website to be the basis of another start-up idea.",
+      "gold": [
+        {
+          "start": 77,
+          "end": 84,
+          "label": "PERSON"
+        },
+        {
+          "start": 66,
+          "end": 72,
+          "label": "PERSON"
+        },
+        {
+          "start": 59,
+          "end": 64,
+          "label": "PERSON"
+        },
+        {
+          "start": 0,
+          "end": 21,
+          "label": "ORGANIZATION"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 4
+    },
+    {
+      "template_id": "137",
+      "text": "Tomomi Nishiyama lives at 86036 Rua do Arenque 1634, Goiânia",
+      "gold": [
+        {
+          "start": 53,
+          "end": 60,
+          "label": "GPE"
+        },
+        {
+          "start": 32,
+          "end": 51,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 26,
+          "end": 31,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 0,
+          "end": 16,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [
+        {
+          "start": 26,
+          "end": 31,
+          "label": "ZIP_CODE"
+        }
+      ],
+      "tp": 0,
+      "fp": 1,
+      "fn": 4
+    },
+    {
+      "template_id": "120",
+      "text": "Verdafero is the brainchild of our 3 founders: Eklund, Michael and Hodge.  The idea was born (on the beach) while they were constructing a website to be the basis of another start-up idea.",
+      "gold": [
+        {
+          "start": 67,
+          "end": 72,
+          "label": "PERSON"
+        },
+        {
+          "start": 55,
+          "end": 62,
+          "label": "PERSON"
+        },
+        {
+          "start": 47,
+          "end": 53,
+          "label": "PERSON"
+        },
+        {
+          "start": 0,
+          "end": 9,
+          "label": "ORGANIZATION"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 4
+    },
+    {
+      "template_id": "141",
+      "text": "We moved here from Kenosha",
+      "gold": [
+        {
+          "start": 19,
+          "end": 26,
+          "label": "GPE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "81",
+      "text": "My website is http://www.ScrapbookInsider.com.pt/",
+      "gold": [
+        {
+          "start": 14,
+          "end": 49,
+          "label": "DOMAIN_NAME"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "170",
+      "text": "follow up with patricia desrosiers in a couple of months.",
+      "gold": [
+        {
+          "start": 15,
+          "end": 34,
+          "label": "PERSON"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "148",
+      "text": "The Propublica office is at Růžena and Király u. 15.",
+      "gold": [
+        {
+          "start": 28,
+          "end": 52,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 4,
+          "end": 14,
+          "label": "ORGANIZATION"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 2
+    },
+    {
+      "template_id": "83",
+      "text": "I've shared files with you https://ClickPhobia.com.br/",
+      "gold": [
+        {
+          "start": 27,
+          "end": 54,
+          "label": "DOMAIN_NAME"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "11",
+      "text": "My card 4131034282458809939 is expiring this month. Please let me know process to it's extend validity.",
+      "gold": [
+        {
+          "start": 8,
+          "end": 27,
+          "label": "CREDIT_CARD"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    },
+    {
+      "template_id": "148",
+      "text": "The Avalara office is at PSC 0413, Box 8144\nAPO AA 42323",
+      "gold": [
+        {
+          "start": 25,
+          "end": 56,
+          "label": "STREET_ADDRESS"
+        },
+        {
+          "start": 4,
+          "end": 11,
+          "label": "ORGANIZATION"
+        }
+      ],
+      "pred": [
+        {
+          "start": 51,
+          "end": 56,
+          "label": "ZIP_CODE"
+        }
+      ],
+      "tp": 0,
+      "fp": 1,
+      "fn": 2
+    },
+    {
+      "template_id": "206",
+      "text": "This 74 year old female complaining of stomach pain.",
+      "gold": [
+        {
+          "start": 5,
+          "end": 7,
+          "label": "AGE"
+        }
+      ],
+      "pred": [],
+      "tp": 0,
+      "fp": 0,
+      "fn": 1
+    }
+  ]
+}
